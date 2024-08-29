@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background-color: #e9ecef;
+            border: 1px solid #ccc;
+            padding: 15px;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .user-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .user-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .user-item.selected {
+            background-color: #d1e7dd;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>User Management</h1>
+
+    <h2>Users Data </h2>
+    <pre id="userData">Loading...</pre>
+    <div id="updateForm" style="display:none;">
+        <h2>Update User</h2>
+        <form>
+            <input type="hidden" id="updateUserId">
+            <label for="updateName">Name:</label>
+            <input type="text" id="updateName" required>
+            <label for="updatePhoneNumber">Phone Number:</label>
+            <input type="text" id="updatePhoneNumber" required>
+            <label for="updateProfession">Profession:</label>
+            <input type="text" id="updateProfession">
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
+
+    <script>
+        let users = []; // To store fetched users
+
+        // Fetch and display users on page load
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayUsers);
+
+        async function fetchAndDisplayUsers() {
+            try {
+                const response = await fetch('/api/users');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                users = await response.json();
+                displayUsers(users);
+            } catch (error) {
+                document.getElementById('userData').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function displayUsers(users) {
+            const preElement = document.getElementById('userData');
+            preElement.innerHTML = ''; // Clear previous data
+
+            users.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.dataset.userId = user._id;
+                userDiv.innerHTML = `
+          <strong>ID:</strong> ${user._id} <br>
+          <strong>Name:</strong> ${user.name} <br>
+          <strong>Phone Number:</strong> ${user.phone} <br>
+          <strong>Profession:</strong> ${user.profession} <br>
+          <strong>Password:</strong> ${user.password} <br>
+          <div class="button-container">
+            <button onclick="selectUser('${user._id}', '${user.name}', '${user.phone}','${user.profession}')">Select</button>
+            <button onclick="deleteUser('${user._id}')">Delete</button>
+          </div>
+        `;
+                preElement.appendChild(userDiv);
+            });
+        }
+
+        function selectUser(id, name, phone,profession) {
+            document.getElementById('userData').style.display = 'none';
+            document.getElementById('updateForm').style.display = 'block';
+            document.getElementById('updateUserId').value = id;
+            document.getElementById('updateName').value = name;
+            document.getElementById('updatePhoneNumber').value = phone;
+            document.getElementById('updateProfession').value = profession;
+
+            // Highlight selected user
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            const selectedItem = document.querySelector(`[data-user-id="${id}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
+        }
+
+        document.getElementById('updateForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const id = document.getElementById('updateUserId').value;
+            const name = document.getElementById('updateName').value;
+            const phone = document.getElementById('updatePhoneNumber').value;
+            const profession = document.getElementById('updateProfession').value;
+            console.log(profession)
+            try {
+                await fetch(`/api/users/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, phone, profession }),
+                });
+                fetchAndDisplayUsers(); // Refresh user list
+                document.getElementById('updateForm').style.display = 'none';
+                document.getElementById('userData').style.display = 'block';
+
+            } catch (error) {
+                alert('Error updating user: ' + error.message);
+            }
+        });
+
+        async function deleteUser(id) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                try {
+                    await fetch(`/api/users/${id}`, {
+                        method: 'DELETE',
+                    });
+                    fetchAndDisplayUsers(); // Refresh user list
+                } catch (error) {
+                    alert('Error deleting user: ' + error.message);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

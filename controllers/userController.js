@@ -46,7 +46,6 @@ exports.updateUser = async (req, res) => {
       if (!name || !phone) {
         return res.status(400).json({ message: 'Name and phone number are required.' });
       }
-      console.log(profession)
   
       const user = await User.findByIdAndUpdate(id, { name, phone, profession }, { new: true });
       

@@ -45,7 +45,7 @@ The **Livestream Overlay Application** is a full-stack web application that allo
 
 3. **Start the Node.js backend**:
     ```bash
-    npm start
+    npm dev
     ```
 
 4. **Start the Flask backend** (for video streaming):
